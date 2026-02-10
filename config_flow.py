@@ -3,11 +3,10 @@ import logging
 from typing import Any
 
 import voluptuous as vol
-from pymodbus.client import ModbusTcpClient
 
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SCAN_INTERVAL
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResult
 import homeassistant.helpers.config_validation as cv
 
@@ -22,6 +21,10 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 
+class CannotConnect(Exception):
+    """Error to indicate we cannot connect."""
+
+
 async def validate_input(hass: HomeAssistant, data: dict) -> dict[str, Any]:
     """Validate the user input allows us to connect."""
     host = data[CONF_HOST]
@@ -31,15 +34,19 @@ async def validate_input(hass: HomeAssistant, data: dict) -> dict[str, Any]:
     def test_connection():
         """Test connection to Modbus device."""
         try:
+            from pymodbus.client import ModbusTcpClient
+            
             client = ModbusTcpClient(host, port=port, timeout=5)
-            client.connect()
-            if not client.is_socket_open():
+            if not client.connect():
                 return False
+            
             # Try to read device address
             result = client.read_holding_registers(0x1000, 1, slave=slave_id)
             client.close()
+            
             return not result.isError()
-        except Exception:
+        except Exception as err:
+            _LOGGER.error("Connection test failed: %s", err)
             return False
 
     if not await hass.async_add_executor_job(test_connection):
@@ -62,13 +69,18 @@ class FoxESSChargerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             try:
                 info = await validate_input(self.hass, user_input)
+                
+                # Check if already configured
+                await self.async_set_unique_id(user_input[CONF_HOST])
+                self._abort_if_unique_id_configured()
+                
+                return self.async_create_entry(title=info["title"], data=user_input)
+                
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
-            else:
-                return self.async_create_entry(title=info["title"], data=user_input)
 
         data_schema = vol.Schema(
             {
@@ -88,7 +100,6 @@ class FoxESSChargerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     @staticmethod
-    @callback
     def async_get_options_flow(config_entry):
         """Get the options flow for this handler."""
         return FoxESSChargerOptionsFlow(config_entry)
@@ -121,7 +132,3 @@ class FoxESSChargerOptionsFlow(config_entries.OptionsFlow):
                 }
             ),
         )
-
-
-class CannotConnect(Exception):
-    """Error to indicate we cannot connect."""
