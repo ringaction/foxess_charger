@@ -2,9 +2,6 @@
 import logging
 from datetime import timedelta
 
-from pymodbus.client import ModbusTcpClient
-from pymodbus.exceptions import ModbusException
-
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
@@ -15,12 +12,6 @@ from .const import (
     PLATFORMS,
     CONF_SLAVE_ID,
     DEFAULT_SCAN_INTERVAL,
-    REG_STATUS,
-    REG_L1_VOLTAGE,
-    REG_L1_CURRENT,
-    REG_ACTIVE_POWER,
-    REG_CURRENT_ENERGY,
-    REG_TOTAL_ENERGY,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -83,10 +74,12 @@ class FoxESSChargerCoordinator(DataUpdateCoordinator):
     def _connect(self) -> bool:
         """Connect to Modbus device."""
         try:
-            if self.client is None or not self.client.is_socket_open():
+            from pymodbus.client import ModbusTcpClient
+            
+            if self.client is None or not self.client.connected:
                 self.client = ModbusTcpClient(self.host, port=self.port, timeout=5)
                 self.client.connect()
-            return self.client.is_socket_open()
+            return self.client.connected
         except Exception as err:
             _LOGGER.error("Failed to connect to %s:%s - %s", self.host, self.port, err)
             return False
@@ -106,9 +99,6 @@ class FoxESSChargerCoordinator(DataUpdateCoordinator):
                 return None
 
             return result.registers
-        except ModbusException as err:
-            _LOGGER.error("Modbus exception: %s", err)
-            return None
         except Exception as err:
             _LOGGER.error("Error reading registers: %s", err)
             return None
@@ -132,7 +122,10 @@ class FoxESSChargerCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self):
         """Fetch data from the device."""
-        return await self.hass.async_add_executor_job(self._fetch_data)
+        try:
+            return await self.hass.async_add_executor_job(self._fetch_data)
+        except Exception as err:
+            raise UpdateFailed(f"Error communicating with device: {err}") from err
 
     def _fetch_data(self) -> dict:
         """Fetch all data from Modbus registers."""
