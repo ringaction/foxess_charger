@@ -1,0 +1,245 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Fox ESS EV Charger Einrichtung",
+        "description": "Konfigurieren Sie die Verbindung zu Ihrem Fox ESS EV Charger",
+        "data": {
+          "host": "IP-Adresse",
+          "port": "Port",
+          "slave_id": "Modbus Slave ID",
+          "scan_interval": "Aktualisierungsintervall (Sekunden)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zum Charger fehlgeschlagen. Bitte überprüfen Sie IP-Adresse und Port.",
+      "unknown": "Ein unerwarteter Fehler ist aufgetreten"
+    },
+    "abort": {
+      "already_configured": "Gerät ist bereits konfiguriert"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Fox ESS Charger Optionen",
+        "data": {
+          "scan_interval": "Aktualisierungsintervall (Sekunden)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "software_version": {
+        "name": "Software Version"
+      },
+      "device_address": {
+        "name": "Geräteadresse"
+      },
+      "status": {
+        "name": "Status",
+        "state": {
+          "idle": "Inaktiv",
+          "connected": "Verbunden",
+          "ready": "Bereit",
+          "charging": "Lädt",
+          "paused": "Pausiert",
+          "finished": "Beendet",
+          "fault": "Fehler",
+          "reserved": "Reserviert",
+          "locked": "Gesperrt"
+        }
+      },
+      "cp_status": {
+        "name": "CP Status",
+        "state": {
+          "fault": "Fehler",
+          "12v_disconnected": "12V (Nicht verbunden)",
+          "9v_connected": "9V (Verbunden)",
+          "6v_ready": "6V (Ladebereit)"
+        }
+      },
+      "cc_status": {
+        "name": "CC Status",
+        "state": {
+          "disconnected": "Nicht verbunden",
+          "connected": "Verbunden"
+        }
+      },
+      "lock_status": {
+        "name": "Schlossstatus",
+        "state": {
+          "unlocked": "Entsperrt",
+          "locked": "Gesperrt"
+        }
+      },
+      "work_mode": {
+        "name": "Arbeitsmodus",
+        "state": {
+          "controlled": "Gesteuert",
+          "plug_and_charge": "Plug & Charge",
+          "locked": "Gesperrt"
+        }
+      },
+      "phase_sequence": {
+        "name": "Phasensequenz",
+        "state": {
+          "three_phase": "Dreiphasig",
+          "l2_single_phase": "L2 (Einphasig)",
+          "l3_single_phase": "L3 (Einphasig)",
+          "reserved": "Reserviert"
+        }
+      },
+      "stop_reason": {
+        "name": "Stopp-Grund"
+      },
+      "port_temperature": {
+        "name": "Ladeanschluss Temperatur"
+      },
+      "ambient_temperature": {
+        "name": "Umgebungstemperatur"
+      },
+      "l1_voltage": {
+        "name": "L1 Spannung"
+      },
+      "l2_voltage": {
+        "name": "L2 Spannung"
+      },
+      "l3_voltage": {
+        "name": "L3 Spannung"
+      },
+      "l1_current": {
+        "name": "L1 Strom"
+      },
+      "l2_current": {
+        "name": "L2 Strom"
+      },
+      "l3_current": {
+        "name": "L3 Strom"
+      },
+      "total_current": {
+        "name": "Gesamtstrom"
+      },
+      "charging_power": {
+        "name": "Ladeleistung"
+      },
+      "max_power": {
+        "name": "Max. unterstützte Leistung"
+      },
+      "min_power": {
+        "name": "Min. unterstützte Leistung"
+      },
+      "max_current": {
+        "name": "Max. unterstützter Strom"
+      },
+      "min_current": {
+        "name": "Min. unterstützter Strom"
+      },
+      "default_current": {
+        "name": "Standard-Strom"
+      },
+      "current_energy": {
+        "name": "Aktuelle Sitzungsenergie"
+      },
+      "total_energy": {
+        "name": "Gesamtenergie"
+      },
+      "allowed_charge_time": {
+        "name": "Erlaubte Ladezeit"
+      },
+      "allowed_charge_energy": {
+        "name": "Erlaubte Ladeenergie"
+      },
+      "time_validity": {
+        "name": "Zeitgültigkeit"
+      },
+      "min_switch_interval": {
+        "name": "Min. Umschaltintervall"
+      },
+      "alarm_code": {
+        "name": "Alarmcode"
+      },
+      "fault_code": {
+        "name": "Fehlercode"
+      },
+      "rfid_card": {
+        "name": "RFID-Karte"
+      }
+    },
+    "binary_sensor": {
+      "is_charging": {
+        "name": "Lädt"
+      },
+      "vehicle_connected": {
+        "name": "Fahrzeug verbunden"
+      },
+      "has_fault": {
+        "name": "Fehler"
+      },
+      "has_alarm": {
+        "name": "Alarm"
+      },
+      "is_locked": {
+        "name": "Gesperrt"
+      }
+    },
+    "number": {
+      "max_charging_current": {
+        "name": "Max. Ladestrom"
+      },
+      "max_charging_power": {
+        "name": "Max. Ladeleistung"
+      },
+      "allowed_charge_time": {
+        "name": "Erlaubte Ladezeit"
+      },
+      "allowed_charge_energy": {
+        "name": "Erlaubte Ladeenergie"
+      },
+      "default_current": {
+        "name": "Standard-Strom"
+      },
+      "time_validity": {
+        "name": "Zeitgültigkeit"
+      },
+      "min_switch_interval": {
+        "name": "Min. Umschaltintervall"
+      }
+    },
+    "select": {
+      "work_mode_control": {
+        "name": "Arbeitsmodus",
+        "state": {
+          "controlled": "Gesteuert",
+          "plug_and_charge": "Plug & Charge",
+          "locked": "Gesperrt"
+        }
+      },
+      "auto_phase_switch_control": {
+        "name": "Auto Phasenumschaltung",
+        "state": {
+          "disabled": "Deaktiviert",
+          "enabled": "Aktiviert"
+        }
+      },
+      "phase_switching_control": {
+        "name": "Phasenumschaltung",
+        "state": {
+          "three_phase": "Dreiphasig",
+          "l2_single_phase": "L2 (Einphasig)",
+          "l3_single_phase": "L3 (Einphasig)"
+        }
+      }
+    },
+    "switch": {
+      "charging": {
+        "name": "Laden"
+      },
+      "lock": {
+        "name": "Sperre"
+      }
+    }
+  }
+}
