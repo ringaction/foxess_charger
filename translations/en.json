@@ -1,0 +1,107 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Fox ESS EV Charger Setup",
+        "description": "Configure your Fox ESS EV Charger connection",
+        "data": {
+          "host": "IP Address",
+          "port": "Port",
+          "slave_id": "Modbus Slave ID",
+          "scan_interval": "Scan Interval (seconds)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to the charger. Please check the IP address and port.",
+      "unknown": "Unexpected error occurred"
+    },
+    "abort": {
+      "already_configured": "Device is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Fox ESS Charger Options",
+        "data": {
+          "scan_interval": "Scan Interval (seconds)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "state": {
+          "idle": "Idle",
+          "connected": "Connected",
+          "ready": "Ready",
+          "charging": "Charging",
+          "paused": "Paused",
+          "finished": "Finished",
+          "fault": "Fault",
+          "reserved": "Reserved",
+          "locked": "Locked"
+        }
+      },
+      "cp_status": {
+        "state": {
+          "fault": "Fault",
+          "12v_disconnected": "12V (Disconnected)",
+          "9v_connected": "9V (Connected)",
+          "6v_ready": "6V (Ready)"
+        }
+      },
+      "cc_status": {
+        "state": {
+          "disconnected": "Disconnected",
+          "connected": "Connected"
+        }
+      },
+      "lock_status": {
+        "state": {
+          "unlocked": "Unlocked",
+          "locked": "Locked"
+        }
+      },
+      "work_mode": {
+        "state": {
+          "controlled": "Controlled",
+          "plug_and_charge": "Plug & Charge",
+          "locked": "Locked"
+        }
+      },
+      "phase_sequence": {
+        "state": {
+          "three_phase": "Three Phase",
+          "l2_single_phase": "L2 (Single Phase)",
+          "l3_single_phase": "L3 (Single Phase)",
+          "reserved": "Reserved"
+        }
+      }
+    },
+    "select": {
+      "work_mode_control": {
+        "state": {
+          "controlled": "Controlled",
+          "plug_and_charge": "Plug & Charge",
+          "locked": "Locked"
+        }
+      },
+      "auto_phase_switch_control": {
+        "state": {
+          "disabled": "Disabled",
+          "enabled": "Enabled"
+        }
+      },
+      "phase_switching_control": {
+        "state": {
+          "three_phase": "Three Phase",
+          "l2_single_phase": "L2 (Single Phase)",
+          "l3_single_phase": "L3 (Single Phase)"
+        }
+      }
+    }
+  }
+}
