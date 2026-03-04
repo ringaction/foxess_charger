@@ -98,8 +98,9 @@ class FoxESSChargerSwitch(CoordinatorEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
+        # FIX: Use modbus_client instead of coordinator
         success = await self.hass.async_add_executor_job(
-            self.coordinator.write_register,
+            self.coordinator.modbus_client.write_register,
             self.entity_description.register,
             self.entity_description.on_value,
         )
@@ -108,8 +109,9 @@ class FoxESSChargerSwitch(CoordinatorEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
+        # FIX: Use modbus_client instead of coordinator
         success = await self.hass.async_add_executor_job(
-            self.coordinator.write_register,
+            self.coordinator.modbus_client.write_register,
             self.entity_description.register,
             self.entity_description.off_value,
         )

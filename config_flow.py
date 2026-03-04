@@ -17,6 +17,7 @@ from .const import (
     DEFAULT_SLAVE_ID,
     DEFAULT_SCAN_INTERVAL,
 )
+from .modbus_client import FoxESSModbusClient
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,21 +34,26 @@ async def validate_input(hass: HomeAssistant, data: dict) -> dict[str, Any]:
 
     def test_connection():
         """Test connection to Modbus device."""
+        client = FoxESSModbusClient(host, port, slave_id)
+        
         try:
-            from pymodbus.client import ModbusTcpClient
-            
-            client = ModbusTcpClient(host, port=port, timeout=5)
             if not client.connect():
                 return False
             
             # Try to read device address
-            result = client.read_holding_registers(0x1000, 1, slave=slave_id)
-            client.close()
+            result = client.read_holding_registers(0x1000, 1)
             
-            return not result.isError()
+            if result is None or len(result) == 0:
+                return False
+                
+            _LOGGER.info("Connection test successful, device address: %s", result[0])
+            return True
+            
         except Exception as err:
             _LOGGER.error("Connection test failed: %s", err)
             return False
+        finally:
+            client.disconnect()
 
     if not await hass.async_add_executor_job(test_connection):
         raise CannotConnect
@@ -79,7 +85,7 @@ class FoxESSChargerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except CannotConnect:
                 errors["base"] = "cannot_connect"
             except Exception:  # pylint: disable=broad-except
-                _LOGGER.exception("Unexpected exception")
+                _LOGGER.exception("Unexpected exception during config")
                 errors["base"] = "unknown"
 
         data_schema = vol.Schema(

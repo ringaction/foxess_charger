@@ -45,7 +45,7 @@ NUMBERS: tuple[FoxESSChargerNumberDescription, ...] = (
         native_max_value=32,
         native_step=0.1,
         register=REG_MAX_CHARGING_CURRENT,
-        scale=10.0,  # Value * 10 for register
+        scale=10.0,
     ),
     FoxESSChargerNumberDescription(
         key="max_charging_power",
@@ -167,8 +167,9 @@ class FoxESSChargerNumber(CoordinatorEntity, NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         """Set new value."""
         register_value = int(value * self.entity_description.scale)
+        # FIX: Use modbus_client instead of coordinator
         success = await self.hass.async_add_executor_job(
-            self.coordinator.write_register,
+            self.coordinator.modbus_client.write_register,
             self.entity_description.register,
             register_value,
         )

@@ -112,8 +112,9 @@ class FoxESSChargerSelect(CoordinatorEntity, SelectEntity):
         """Change the selected option."""
         if self.entity_description.value_map and option in self.entity_description.value_map:
             value = self.entity_description.value_map[option]
+            # FIX: Use modbus_client instead of coordinator
             success = await self.hass.async_add_executor_job(
-                self.coordinator.write_register,
+                self.coordinator.modbus_client.write_register,
                 self.entity_description.register,
                 value,
             )
