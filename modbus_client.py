@@ -1,192 +1,163 @@
-"""Modbus client for Fox ESS Charger using HA's modbus component."""
-import logging
-from typing import Any
+"""Modbus TCP client for FoxESS EV Charger."""
+from __future__ import annotations
 
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_platform
+import logging
+import socket
 
 _LOGGER = logging.getLogger(__name__)
 
+# ── Modbus Function Codes ─────────────────────────────────────────────────────
+FC_READ_HOLDING     = 0x03   # Lesen R/W und R-Only Register
+FC_WRITE_SINGLE     = 0x06   # Schreiben W-Only Register  (0x4000–0x4003)
+FC_WRITE_MULTIPLE   = 0x10   # Schreiben R/W Register     (0x3000–0x300B)
+
+# ── W-Only Register Adressen (FC 0x06) ───────────────────────────────────────
+WRITE_ONLY_REGISTERS = {0x4000, 0x4001, 0x4002, 0x4003}
+
 
 class FoxESSModbusClient:
-    """Fox ESS Modbus TCP client using Home Assistant's modbus."""
+    """Minimal Modbus TCP client (raw sockets, kein pymodbus)."""
 
     def __init__(self, host: str, port: int, slave_id: int) -> None:
-        """Initialize the Modbus client."""
-        self._host = host
-        self._port = port
-        self._slave_id = slave_id
-        self._pymodbus_client = None
+        self._host      = host
+        self._port      = port
+        self._slave_id  = slave_id
+        self._tid       = 0
 
-    def _lazy_import_pymodbus(self):
-        """Lazy import pymodbus to avoid loading issues."""
-        if self._pymodbus_client is not None:
-            return self._pymodbus_client
-            
+    # ── Interne Hilfsmethoden ─────────────────────────────────────────────────
+
+    def _next_tid(self) -> int:
+        self._tid = (self._tid + 1) % 0xFFFF
+        return self._tid
+
+    def _send_recv(self, request: bytes, timeout: float = 5.0) -> bytes | None:
         try:
-            from pymodbus.client import ModbusTcpClient
-            self._pymodbus_client = ModbusTcpClient(
-                self._host,
-                port=self._port,
-                timeout=5,
-            )
-            return self._pymodbus_client
+            with socket.create_connection((self._host, self._port), timeout=timeout) as sock:
+                sock.sendall(request)
+                return sock.recv(1024)
         except Exception as ex:
-            _LOGGER.error("Failed to import/create ModbusTcpClient: %s", ex)
+            _LOGGER.error("Modbus TCP %s:%s – Verbindungsfehler: %s", self._host, self._port, ex)
             return None
 
-    def connect(self) -> bool:
-        """Connect to the Modbus device."""
-        client = self._lazy_import_pymodbus()
-        if not client:
-            return False
-            
-        try:
-            result = client.connect()
-            if result:
-                _LOGGER.info("Connected to %s:%s", self._host, self._port)
-            return result
-        except Exception as ex:
-            _LOGGER.error("Connection error: %s", ex)
-            return False
+    def _build_mbap(self, pdu: bytes) -> bytes:
+        """Baut den vollständigen Modbus TCP ADU (MBAP + PDU)."""
+        tid     = self._next_tid()
+        length  = 1 + len(pdu)   # Unit ID (1) + PDU
+        return (
+            tid.to_bytes(2, "big")              +  # Transaction ID
+            (0).to_bytes(2, "big")              +  # Protocol ID
+            length.to_bytes(2, "big")           +  # Length
+            self._slave_id.to_bytes(1, "big")   +  # Unit ID
+            pdu
+        )
 
-    def disconnect(self) -> None:
-        """Disconnect from the Modbus device."""
-        if self._pymodbus_client:
-            try:
-                self._pymodbus_client.close()
-            except:
-                pass
-            self._pymodbus_client = None
+    # ── Öffentliche Methoden ──────────────────────────────────────────────────
 
-    def read_holding_registers(self, address: int, count: int) -> list[int] | None:
-        """Read holding registers using low-level pymodbus."""
-        client = self._lazy_import_pymodbus()
-        if not client:
-            return None
-            
-        if not self.connect():
-            return None
-        
-        try:
-            # Build the raw PDU request
-            # Function code 0x03 = Read Holding Registers
-            pdu = bytes([0x03]) + address.to_bytes(2, 'big') + count.to_bytes(2, 'big')
-            
-            # Send raw request
-            from pymodbus.transaction import ModbusSocketFramer
-            from pymodbus.framer import ModbusFramer
-            
-            # Use the client's framer to build and send request
-            request_pdu = client.framer.buildPacket(pdu)
-            client.socket.send(request_pdu)
-            
-            # Receive response
-            response_pdu = client.socket.recv(1024)
-            response = client.framer.processIncomingPacket(response_pdu)
-            
-            # Parse response
-            if response and len(response) > 2:
-                byte_count = response[2]
-                registers = []
-                for i in range(0, byte_count, 2):
-                    reg_value = int.from_bytes(response[3+i:5+i], 'big')
-                    registers.append(reg_value)
-                return registers
-                
-            return None
-            
-        except Exception as ex:
-            _LOGGER.debug("Low-level read failed (expected, using raw socket): %s", ex)
-
-            
-            # Ultimate fallback: raw socket
-            try:
-                import socket
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.settimeout(5)
-                sock.connect((self._host, self._port))
-                
-                # MODBUS TCP/IP ADU = Transaction ID + Protocol ID + Length + Unit ID + PDU
-                transaction_id = 1
-                protocol_id = 0
-                length = 6  # Unit ID (1) + Function Code (1) + Address (2) + Count (2)
-                unit_id = self._slave_id
-                function_code = 0x03
-                
-                # Build request
-                request = (
-                    transaction_id.to_bytes(2, 'big') +
-                    protocol_id.to_bytes(2, 'big') +
-                    length.to_bytes(2, 'big') +
-                    unit_id.to_bytes(1, 'big') +
-                    function_code.to_bytes(1, 'big') +
-                    address.to_bytes(2, 'big') +
-                    count.to_bytes(2, 'big')
-                )
-                
-                sock.send(request)
-                response = sock.recv(1024)
-                sock.close()
-                
-                # Parse MODBUS TCP response
-                # Skip: Trans ID (2) + Proto ID (2) + Length (2) + Unit ID (1) + Func (1)
-                if len(response) > 9:
-                    byte_count = response[8]
-                    registers = []
-                    for i in range(0, byte_count, 2):
-                        reg_value = int.from_bytes(response[9+i:11+i], 'big')
-                        registers.append(reg_value)
-                    _LOGGER.info("Raw socket read successful!")
-                    return registers
-                    
-            except Exception as sock_ex:
-                _LOGGER.error("Raw socket read failed: %s", sock_ex)
-                
+    def read_registers(self, address: int, count: int) -> list[int] | None:
+        """Liest `count` Holding-Register ab `address` (FC 0x03)."""
+        pdu = (
+            FC_READ_HOLDING.to_bytes(1, "big") +
+            address.to_bytes(2, "big")         +
+            count.to_bytes(2, "big")
+        )
+        response = self._send_recv(self._build_mbap(pdu))
+        if response is None:
             return None
 
-    def write_register(self, address: int, value: int) -> bool:
-        """Write single register."""
-        if not self.connect():
-            return False
-            
-        try:
-            import socket
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(5)
-            sock.connect((self._host, self._port))
-            
-            # MODBUS TCP Write Single Register (0x06)
-            transaction_id = 1
-            protocol_id = 0
-            length = 6
-            unit_id = self._slave_id
-            function_code = 0x06
-            
-            request = (
-                transaction_id.to_bytes(2, 'big') +
-                protocol_id.to_bytes(2, 'big') +
-                length.to_bytes(2, 'big') +
-                unit_id.to_bytes(1, 'big') +
-                function_code.to_bytes(1, 'big') +
-                address.to_bytes(2, 'big') +
-                value.to_bytes(2, 'big')
-            )
-            
-            sock.send(request)
-            response = sock.recv(1024)
-            sock.close()
-            
-            # Check if response echoes the request (successful write)
-            return len(response) >= 12
-            
-        except Exception as ex:
-            _LOGGER.error("Write failed: %s", ex)
-            return False
+        # Modbus Exception prüfen
+        if len(response) >= 9 and response[7] == (FC_READ_HOLDING | 0x80):
+            _LOGGER.error("Modbus FC03 Exception 0x%02X @ 0x%04X", response[8], address)
+            return None
+
+        if len(response) < 9:
+            _LOGGER.warning("FC03: zu kurze Antwort (%d Bytes)", len(response))
+            return None
+
+        byte_count = response[8]
+        payload    = response[9: 9 + byte_count]
+        registers  = [int.from_bytes(payload[i:i+2], "big") for i in range(0, byte_count, 2)]
+        _LOGGER.debug("FC03 Read 0x%04X count=%d → %s", address, count, registers)
+        return registers
 
     def read_uint32(self, address: int) -> int | None:
-        """Read 32-bit unsigned integer (2 registers)."""
-        registers = self.read_holding_registers(address, 2)
-        if registers and len(registers) >= 2:
-            return (registers[0] << 16) | registers[1]
+        """Liest einen UINT32-Wert aus zwei aufeinanderfolgenden Registern."""
+        regs = self.read_registers(address, 2)
+        if regs and len(regs) >= 2:
+            return (regs[0] << 16) | regs[1]
         return None
+
+    def write_holding_register(self, address: int, value: int) -> bool:
+        """
+        Schreibt ein einzelnes Register.
+
+        R/W Register (0x3000–0x300B) → FC 0x10 (Write Multiple Registers)
+        W-Only Register (0x4000–0x4003) → FC 0x06 (Write Single Register)
+        """
+        if address in WRITE_ONLY_REGISTERS:
+            return self._write_single(address, value)
+        else:
+            return self._write_multiple(address, value)
+
+    # ── Private Write-Methoden ────────────────────────────────────────────────
+
+    def _write_single(self, address: int, value: int) -> bool:
+        """FC 0x06 – Write Single Register (W-Only Register 0x4000–0x4003)."""
+        pdu = (
+            FC_WRITE_SINGLE.to_bytes(1, "big") +
+            address.to_bytes(2, "big")         +
+            value.to_bytes(2, "big")
+        )
+        response = self._send_recv(self._build_mbap(pdu))
+        if response is None:
+            return False
+
+        if len(response) >= 9 and response[7] == (FC_WRITE_SINGLE | 0x80):
+            _LOGGER.error(
+                "FC06 Exception 0x%02X @ 0x%04X value=%d",
+                response[8], address, value,
+            )
+            return False
+
+        success = len(response) >= 12
+        if success:
+            _LOGGER.debug("FC06 Write 0x%04X = %d ✓", address, value)
+        else:
+            _LOGGER.warning(
+                "FC06 Write 0x%04X = %d: unerwartete Antwort (%d Bytes): %s",
+                address, value, len(response), response.hex(),
+            )
+        return success
+
+    def _write_multiple(self, address: int, value: int) -> bool:
+        """FC 0x10 – Write Multiple Registers (R/W Register 0x3000–0x300B)."""
+        pdu = (
+            FC_WRITE_MULTIPLE.to_bytes(1, "big") +
+            address.to_bytes(2, "big")           +
+            (1).to_bytes(2, "big")               +  # Quantity = 1 Register
+            (2).to_bytes(1, "big")               +  # ByteCount = 2
+            value.to_bytes(2, "big")
+        )
+        response = self._send_recv(self._build_mbap(pdu))
+        if response is None:
+            return False
+
+        if len(response) >= 9 and response[7] == (FC_WRITE_MULTIPLE | 0x80):
+            _LOGGER.error(
+                "FC10 Exception 0x%02X @ 0x%04X value=%d",
+                response[8], address, value,
+            )
+            return False
+
+        success = len(response) >= 12
+        if success:
+            _LOGGER.debug("FC10 Write 0x%04X = %d ✓", address, value)
+        else:
+            _LOGGER.warning(
+                "FC10 Write 0x%04X = %d: unerwartete Antwort (%d Bytes): %s",
+                address, value, len(response), response.hex(),
+            )
+        return success
+
+    def disconnect(self) -> None:
+        """Kein persistenter Socket – nichts zu schließen."""
+        pass

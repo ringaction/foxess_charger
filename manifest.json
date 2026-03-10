@@ -1,12 +1,12 @@
 {
   "domain": "foxess_charger",
-  "name": "Fox ESS EV Charger",
-  "codeowners": ["@ringaction"],
+  "name": "FoxESS EV Charger",
+  "version": "2.0.0",
   "config_flow": true,
-  "dependencies": [],
   "documentation": "https://github.com/ringaction/foxess_charger",
-  "iot_class": "local_polling",
   "issue_tracker": "https://github.com/ringaction/foxess_charger/issues",
-  "requirements": ["pymodbus>=3.6.0"],
-  "version": "1.0.0"
+  "requirements": [],
+  "dependencies": [],
+  "codeowners": [],
+  "iot_class": "local_polling"
 }
