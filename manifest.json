@@ -1,6 +1,6 @@
 {
   "domain": "foxess_charger",
-  "name": "FoxESS EV Charger",
+  "name": "FoxESS EV – Modbus",
   "version": "2.0.0",
   "config_flow": true,
   "documentation": "https://github.com/ringaction/foxess_charger",
