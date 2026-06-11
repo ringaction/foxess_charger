@@ -1,0 +1,107 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Fox ESS EV Lader instellen",
+        "description": "Configureer de verbinding van uw Fox ESS EV-lader",
+        "data": {
+          "host": "IP Adres",
+          "port": "Poort",
+          "slave_id": "Modbus Slave ID",
+          "scan_interval": "Scan Interval (seconden)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbinding met de lader mislukt. Controleer het IP-adres en de poort.",
+      "unknown": "Onverwachte fout opgetreden."
+    },
+    "abort": {
+      "already_configured": "Apparaat is al geconfigureerd."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Fox ESS Lader Opties",
+        "data": {
+          "scan_interval": "Scan Interval (seconden)"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "status": {
+        "state": {
+          "idle": "Stand-by",
+          "connected": "Verbonden",
+          "ready": "Klaar",
+          "charging": "Opladen",
+          "paused": "Gepauzeerd",
+          "finished": "Klaar",
+          "fault": "Fout",
+          "reserved": "Gereserveerd",
+          "locked": "Vergrendeld"
+        }
+      },
+      "cp_status": {
+        "state": {
+          "fault": "Fout",
+          "12v_disconnected": "12V (Ontkoppeld)",
+          "9v_connected": "9V (Verbonden)",
+          "6v_ready": "6V (klaar)"
+        }
+      },
+      "cc_status": {
+        "state": {
+          "disconnected": "Ontkoppeld",
+          "connected": "Verbonden"
+        }
+      },
+      "lock_status": {
+        "state": {
+          "unlocked": "Ontkoppeld",
+          "locked": "Vergrendeld"
+        }
+      },
+      "work_mode": {
+        "state": {
+          "controlled": "Beheerd",
+          "plug_and_charge": "Plug & Charge",
+          "locked": "Vergrendeld"
+        }
+      },
+      "phase_sequence": {
+        "state": {
+          "three_phase": "3-fase",
+          "l2_single_phase": "L2 (1-fasig)",
+          "l3_single_phase": "L3 (1-fasig)",
+          "reserved": "Gereserveerd"
+        }
+      }
+    },
+    "select": {
+      "work_mode_control": {
+        "state": {
+          "controlled": "Beheerd",
+          "plug_and_charge": "Plug & Charge",
+          "locked": "Vergrendeld"
+        }
+      },
+      "auto_phase_switch_control": {
+        "state": {
+          "disabled": "Uitgeschakeld",
+          "enabled": "Ingeschakeld"
+        }
+      },
+      "phase_switching_control": {
+        "state": {
+          "three_phase": "3-fase",
+          "l2_single_phase": "L2 (1-fasig)",
+          "l3_single_phase": "L3 (1-fasig)"
+        }
+      }
+    }
+  }
+}
