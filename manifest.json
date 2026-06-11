@@ -9,4 +9,6 @@
   "dependencies": [],
   "codeowners": [],
   "iot_class": "local_polling"
+  "icon": "icons/foxwebicon.png",
+  "logo": "icons/foxwebicon.png"
 }
