@@ -112,19 +112,23 @@ class FoxESSChargerCoordinator(DataUpdateCoordinator):
                 data[key] = val
 
         # ── 0x3000–0x300B: R/W Config Register ───────────────────────────────
-        cfg = self.client.read_registers(0x3000, 12)
-        if cfg and len(cfg) >= 12:
-            data["work_mode"]                = cfg[0]
-            data["max_charging_current_raw"] = cfg[1]
-            data["max_charging_power_raw"]   = cfg[2]
-            data["allowed_charge_time"]      = cfg[3]
-            data["allowed_charge_energy"]    = cfg[4]
-            data["time_validity"]            = cfg[5]
-            data["default_current_raw"]      = cfg[6]
-            # cfg[7..9] reserviert
-            data["auto_phase_switch"]        = cfg[10]
-            data["min_switch_interval"]      = cfg[11]
+                cfg1 = self.client.read_registers(0x3000, 7)
+        if cfg1 and len(cfg1) >= 7:
+            data["work_mode"] = cfg1[0]
+            data["max_charging_current_raw"] = cfg1[1]
+            data["max_charging_power_raw"] = cfg1[2]
+            data["allowed_charge_time"] = cfg1[3]
+            data["allowed_charge_energy"] = cfg1[4]
+            data["time_validity"] = cfg1[5]
+            data["default_current_raw"] = cfg1[6]
         else:
-            _LOGGER.warning("Could not read config registers 0x3000–0x300B")
+            _LOGGER.warning("Could not read config registers 0x3000–0x3006")
+
+        cfg2 = self.client.read_registers(0x300A, 2)
+        if cfg2 and len(cfg2) >= 2:
+            data["auto_phase_switch"] = cfg2[0]
+            data["min_switch_interval"] = cfg2[1]
+        else:
+            _LOGGER.warning("Could not read config registers 0x300A–0x300B")
 
         return data
